@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CFAV Compliance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface2: #f7f8fa;
+    --border: #dde1e9;
+    --border2: #c8cdd8;
+    --accent: #1a56db;
+    --accent2: #1e429f;
+    --accent-light: #ebf0ff;
+    --red: #c81e1e;
+    --red-bg: #fef2f2;
+    --red-border: #fca5a5;
+    --amber: #92400e;
+    --amber-bg: #fffbeb;
+    --amber-border: #fcd34d;
+    --green: #065f46;
+    --green-bg: #ecfdf5;
+    --green-border: #6ee7b7;
+    --grey: #4b5563;
+    --grey-bg: #f3f4f6;
+    --grey-border: #d1d5db;
+    --text: #111827;
+    --text2: #374151;
+    --muted: #6b7280;
+    --white: #ffffff;
+    --header-bg: #1e3a5f;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', 'Inter', sans-serif;
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--header-bg);
+    border-bottom: 3px solid #2563eb;
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    min-height: 62px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .badge {
+    background: #2563eb;
+    color: #fff;
+    font-family: 'DM Mono', 'Courier New', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .header-titles {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    line-height: 1;
+  }
+  .header h1 {
+    font-family: 'DM Sans', 'Inter', sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #ffffff;
+    line-height: 1.1;
+    margin: 0;
+  }
+  .header-sub {
+    font-size: 11px;
+    color: #93c5fd;
+    letter-spacing: 0.8px;
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1;
+    margin: 0;
+    text-transform: uppercase;
+  }
+  .data-stamp {
+    font-family: 'DM Mono', 'Courier New', monospace;
+    font-size: 11px;
+    color: #93c5fd;
+    text-align: right;
+    line-height: 1.7;
+  }
+
+  /* SUMMARY CARDS */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-card {
+    background: var(--surface);
+    padding: 14px 18px;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+  }
+  .stat-card:hover { background: #f0f4ff; }
+  .stat-card.active { background: #f0f4ff; }
+  .stat-card.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+  }
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 7px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+  }
+  .stat-counts {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+  }
+  .stat-num { font-family: 'DM Sans', sans-serif; font-size: 24px; font-weight: 700; }
+  .stat-num.red { color: #dc2626; }
+  .stat-num.amber { color: #d97706; }
+  .stat-num.green { color: #059669; }
+  .stat-num.blue { color: var(--accent); }
+  .stat-detail { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+  /* TOOLBAR */
+  .toolbar {
+    padding: 12px 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .search-box {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 7px 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    width: 230px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-box:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+  .filter-select {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 7px 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .filter-select:focus { border-color: var(--accent); }
+  .legend { display: flex; gap: 14px; margin-left: auto; align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); font-weight: 500; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .dot.red { background: #dc2626; }
+  .dot.amber { background: #d97706; }
+  .dot.green { background: #059669; }
+  .dot.grey { background: var(--muted); }
+
+  /* MAIN TABLE */
+  .main {
+    padding: 0 28px 20px;
+    overflow-x: auto;
+  }
+  .table-scroll {
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 900px;
+    background: var(--surface);
+  }
+  thead { position: sticky; top: 0; z-index: 10; }
+  thead th {
+    background: #1e3a5f;
+    border-bottom: 2px solid #2563eb;
+    padding: 11px 14px;
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    color: #bfdbfe;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  thead th:hover { color: #ffffff; }
+  thead th.sorted { color: #ffffff; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+    cursor: pointer;
+  }
+  tbody tr:nth-child(even) { background: var(--surface2); }
+  tbody tr:hover { background: #eff6ff; }
+  tbody tr.expanded { background: #eff6ff; }
+
+  td {
+    padding: 10px 14px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .td-name { font-weight: 600; color: var(--text); font-size: 14px; }
+  .td-rank { font-family: 'DM Mono', 'Courier New', monospace; font-size: 11px; color: #2563eb; font-weight: 500; }
+  .td-unit { color: var(--muted); font-size: 12px; font-weight: 500; }
+
+  /* COMPLIANCE CELL */
+  .comp-cell { display: flex; align-items: center; gap: 6px; }
+  .comp-pill {
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    min-width: 64px;
+    text-align: center;
+    display: inline-block;
+  }
+  .pill-expired { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .pill-urgent  { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+  .pill-warn    { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .pill-ok      { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .pill-none    { background: var(--grey-bg); color: var(--grey); border: 1px solid var(--grey-border); }
+
+  /* EXPAND ROW */
+  .expand-row td { padding: 0; background: #f0f4ff; border-bottom: 2px solid #bfdbfe; }
+  .expand-inner { padding: 16px 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 13px 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .detail-title { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.8px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+  .detail-status { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .detail-date { font-size: 11px; color: var(--muted); }
+  .detail-days { font-family: 'DM Sans', sans-serif; font-size: 22px; font-weight: 700; }
+
+  /* ACCESS NI EXTRA */
+  .ani-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; margin-top: 8px; }
+  .ani-field span:first-child { color: var(--muted); font-weight: 500; }
+  .ani-field span:last-child { color: var(--text2); margin-left: 4px; font-weight: 600; }
+
+  /* FOOTER */
+  .footer { text-align: center; padding: 18px; font-family: 'DM Sans', sans-serif; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); background: var(--surface); }
+
+  /* ALERT BANNER */
+  .alert-banner { background: #fef2f2; border-top: 1px solid #fca5a5; border-bottom: 1px solid #fca5a5; padding: 9px 28px; font-size: 13px; color: #c81e1e; display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .pulse { width: 9px; height: 9px; border-radius: 50%; background: #dc2626; animation: pulse 1.4s infinite; flex-shrink: 0; }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+
+  /* VIEW TOGGLE */
+  .view-toggle { display: flex; gap: 2px; background: var(--border); border-radius: 6px; padding: 2px; }
+  .view-btn { padding: 6px 14px; background: transparent; border: none; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; border-radius: 5px; }
+  .view-btn.active { background: var(--accent); color: #fff; }
+  .view-btn:hover:not(.active) { background: var(--surface); color: var(--text); }
+
+  /* TASK VIEW */
+  .task-view { padding: 20px 28px; }
+  .task-section { margin-bottom: 28px; }
+  .task-section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid var(--border); }
+  .task-section-title { font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); }
+  .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+  .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 13px 15px; border-left: 4px solid transparent; transition: transform 0.1s, box-shadow 0.1s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .task-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .task-card.border-red { border-left-color: #dc2626; }
+  .task-card.border-amber { border-left-color: #d97706; }
+  .task-card.border-green { border-left-color: #059669; }
+  .task-card.border-grey { border-left-color: var(--muted); }
+  .tc-name { font-weight: 600; color: var(--text); font-size: 14px; }
+  .tc-rank { font-family: 'DM Mono', monospace; font-size: 10px; color: #2563eb; font-weight: 500; margin-bottom: 6px; }
+  .tc-days { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 700; }
+  .tc-date { font-size: 11px; color: var(--muted); margin-top: 2px; font-weight: 500; }
+
+  .no-results { text-align: center; padding: 60px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; }
+
+  .count-tag { background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 20px; padding: 2px 10px; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="badge">ACF</div>
+    <div class="header-titles">
+      <h1>CFAV Compliance Tracker</h1>
+      <div class="header-sub">Cadet Force Adult Volunteer — Compliance Oversight System</div>
+    </div>
+  </div>
+  <div class="data-stamp">
+    DATA EXTRACTED: 29 APR 2026<br>
+    <span id="live-time">LOADING...</span>
+  </div>
+</div>
+
+<div id="alert-banner" class="alert-banner" style="display:none">
+  <div class="pulse"></div>
+  <span id="alert-text"></span>
+</div>
+
+<div class="stats-bar" id="stats-bar">
+  <!-- filled by JS -->
+</div>
+
+<div class="toolbar">
+  <input class="search-box" type="text" id="search" placeholder="🔍  Search name, PNumber, unit...">
+  <select class="filter-select" id="filter-unit">
+    <option value="">All Units</option>
+  </select>
+  <select class="filter-select" id="filter-status">
+    <option value="">All Statuses</option>
+    <option value="expired">Expired / Overdue</option>
+    <option value="urgent">Due within 30 days</option>
+    <option value="warn">Due within 90 days</option>
+    <option value="ok">Current</option>
+    <option value="none">Not Taken</option>
+  </select>
+  <div class="view-toggle">
+    <button class="view-btn active" onclick="setView('personnel')" id="btn-personnel">PERSONNEL</button>
+    <button class="view-btn" onclick="setView('tasks')" id="btn-tasks">BY TASK</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="dot red"></div> Expired</div>
+    <div class="legend-item"><div class="dot amber"></div> &lt;90 days</div>
+    <div class="legend-item"><div class="dot green"></div> Current</div>
+    <div class="legend-item"><div class="dot grey"></div> Not taken</div>
+  </div>
+</div>
+
+<div id="view-personnel">
+  <div class="main">
+    <div class="table-scroll">
+    <table id="main-table">
+      <thead>
+        <tr>
+          <th onclick="sortBy('name')">Name</th>
+          <th onclick="sortBy('rank')">Rank</th>
+          <th onclick="sortBy('unit')">Unit</th>
+          <th onclick="sortBy('accessni')">Access NI</th>
+          <th onclick="sortBy('safeguarding')">Safeguarding</th>
+          <th onclick="sortBy('fire')">Fire Safety</th>
+          <th onclick="sortBy('rfi')">RFI / Data Prot.</th>
+          <th onclick="sortBy('heat')">Heat &amp; Cold</th>
+          <th onclick="sortBy('medication')">Medication</th>
+          <th onclick="sortBy('worst')">Overall</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+    </div>
+    <div id="no-results" class="no-results" style="display:none">NO RECORDS MATCH YOUR SEARCH CRITERIA</div>
+  </div>
+</div>
+
+<div id="view-tasks" style="display:none">
+  <div class="task-view" id="task-view-content"></div>
+</div>
+
+<div class="footer">CFAV COMPLIANCE DASHBOARD — ACF ADMINISTRATIVE TOOL — DATA AS OF 29 APR 2026 — NOT FOR OPERATIONAL USE</div>
+
+<script>
+const RAW = {"accessNI":[{"PNumber":"C34456","First Name":"Robert","Surname":"MCMAHON","Adult Category":"CFAV","Unit":"Lurgan College","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"12-Jun-23","Renewal Date":"12-Jun-26","Days Remaining":44},{"PNumber":"24921661","First Name":"Paul","Surname":"CHAPMAN","Adult Category":"CFAV","Unit":"E Coy","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"20-Jun-23","Renewal Date":"20-Jun-26","Days Remaining":52},{"PNumber":"30360894","First Name":"Glenn","Surname":"GARDINER","Adult Category":"CFAV","Unit":"Lurgan Open","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"21-Aug-23","Counter Signatory Date":"21-Aug-23","ID Checks Completed":"21-Aug-23","Certificate Issue Date":"23-Aug-23","Renewal Date":"23-Aug-26","Days Remaining":116},{"PNumber":"30355504","First Name":"Zoe","Surname":"MCNALLY","Adult Category":"CFAV","Unit":"Armagh","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":2001910482,"Application Date":"26-Sep-23","Counter Signatory Date":"26-Sep-23","ID Checks Completed":"26-Sep-23","Certificate Issue Date":"28-Sep-23","Renewal Date":"28-Sep-26","Days Remaining":152},{"PNumber":"552936","First Name":"Clifford James","Surname":"MONTGOMERY","Adult Category":"CFAV","Unit":"Portadown","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":2001992157,"Application Date":"18-Oct-23","Counter Signatory Date":"19-Oct-23","ID Checks Completed":"19-Oct-23","Certificate Issue Date":"19-Oct-23","Renewal Date":"19-Oct-26","Days Remaining":173},{"PNumber":"30237276","First Name":"Simon James","Surname":"RAFFERTY","Adult Category":"CFAV","Unit":"E Coy","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":2001993064,"Application Date":"18-Oct-23","Counter Signatory Date":"19-Oct-23","ID Checks Completed":"18-Oct-23","Certificate Issue Date":"25-Oct-23","Renewal Date":"25-Oct-26","Days Remaining":179},{"PNumber":"500574","First Name":"David","Surname":"ROBINSON","Adult Category":"CFAV","Unit":"Portadown","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":200206873,"Application Date":"21-Feb-24","Counter Signatory Date":"01-Mar-24","ID Checks Completed":"01-Mar-24","Certificate Issue Date":"05-Mar-24","Renewal Date":"05-Mar-27","Days Remaining":310},{"PNumber":"30043562","First Name":"CAROLE","Surname":"JOHNSTON","Adult Category":"CFAV","Unit":"Portadown","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":2002080556,"Application Date":"07-Mar-24","Counter Signatory Date":"07-Mar-24","ID Checks Completed":"07-Mar-24","Certificate Issue Date":"13-Mar-24","Renewal Date":"13-Mar-27","Days Remaining":318},{"PNumber":"30340048","First Name":"Jessica","Surname":"HAMILTON","Adult Category":"CFAV","Unit":"Tandragee","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":2002157591,"Application Date":"26-Jun-24","Counter Signatory Date":"26-Jun-24","ID Checks Completed":"26-Jun-24","Certificate Issue Date":"03-Jul-24","Renewal Date":"03-Jul-27","Days Remaining":430},{"PNumber":"30453646","First Name":"James","Surname":"COUGHLIN","Adult Category":"CFAV","Unit":"Portadown","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"01-Nov-24","Renewal Date":"01-Nov-27","Days Remaining":551},{"PNumber":"30453654","First Name":"Jake","Surname":"WILLIS","Adult Category":"CFAV","Unit":"Lurgan Open","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"14-Apr-25","Renewal Date":"14-Apr-28","Days Remaining":716},{"PNumber":"30405166","First Name":"Jack","Surname":"PETERS","Adult Category":"CFAV","Unit":"Kilkeel","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"17-Apr-25","Renewal Date":"17-Apr-28","Days Remaining":719},{"PNumber":"30096850","First Name":"Bryan","Surname":"SWAN","Adult Category":"CFAV","Unit":"Tandragee","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"17-Apr-25","Renewal Date":"17-Apr-28","Days Remaining":719},{"PNumber":"24221454","First Name":"Reggie","Surname":"CHAPMAN","Adult Category":"CFAV","Unit":"Markethill","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"08-May-25","Renewal Date":"08-May-28","Days Remaining":740},{"PNumber":"30365562","First Name":"Taylor","Surname":"HANNA","Adult Category":"CFAV","Unit":"Richhill","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"14-May-25","Renewal Date":"14-May-28","Days Remaining":746},{"PNumber":"30036779","First Name":"Stuart","Surname":"USHER","Adult Category":"CFAV","Unit":"Tandragee","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":2002374373,"Application Date":"01-May-25","Counter Signatory Date":"01-May-25","ID Checks Completed":"01-May-25","Certificate Issue Date":"27-May-25","Renewal Date":"27-May-28","Days Remaining":759},{"PNumber":"30105928","First Name":"Alan","Surname":"NUGENT","Adult Category":"CFAV","Unit":"Kilkeel","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"05-Jun-25","Renewal Date":"05-Jun-28","Days Remaining":768},{"PNumber":"24622054","First Name":"Robert","Surname":"WARRENER","Adult Category":"Permanent Staff","Unit":"E Coy","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"10-Jul-25","Renewal Date":"10-Jul-28","Days Remaining":803},{"PNumber":"30404509","First Name":"Andrew","Surname":"FRIZZELL","Adult Category":"CFAV","Unit":"Portadown","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"31-Jul-25","Renewal Date":"31-Jul-28","Days Remaining":824},{"PNumber":"30463165","First Name":"Alex","Surname":"MCCLURE","Adult Category":"CFAV","Unit":"Portadown","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"05-Aug-25","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"11-Aug-25","Renewal Date":"11-Aug-28","Days Remaining":835},{"PNumber":"24768650","First Name":"William","Surname":"MCELROY","Adult Category":"CFAV","Unit":"Richhill","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"28-Aug-25","Renewal Date":"28-Aug-28","Days Remaining":852},{"PNumber":"30291664","First Name":"Nicola Caroline","Surname":"TOTTEN","Adult Category":"CFAV","Unit":"Lurgan Open","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"28-Aug-25","Renewal Date":"28-Aug-28","Days Remaining":852},{"PNumber":"30404286","First Name":"Sam","Surname":"HANNA","Adult Category":"CFAV","Unit":"Kilkeel","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"15-Oct-25","Renewal Date":"15-Oct-28","Days Remaining":900},{"PNumber":"30463155","First Name":"Alanna","Surname":"GRAY","Adult Category":"CFAV","Unit":"Markethill","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"16-Oct-25","Renewal Date":"16-Oct-28","Days Remaining":901},{"PNumber":"30463161","First Name":"Thomas","Surname":"GRAY","Adult Category":"CFAV","Unit":"Armagh","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"16-Oct-25","Renewal Date":"16-Oct-28","Days Remaining":901},{"PNumber":"30196102","First Name":"Alana","Surname":"NUGENT","Adult Category":"CFAV","Unit":"E Coy","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":2002576459,"Application Date":"01-Oct-25","Counter Signatory Date":"15-Oct-25","ID Checks Completed":"15-Oct-25","Certificate Issue Date":"29-Oct-25","Renewal Date":"29-Oct-28","Days Remaining":914},{"PNumber":"30044424","First Name":"Hugh Alexander","Surname":"GIBSON","Adult Category":"CFAV","Unit":"Tandragee","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"03-Nov-25","Renewal Date":"03-Nov-28","Days Remaining":919},{"PNumber":"C37613","First Name":"Robert","Surname":"STEVENSON","Adult Category":"CFAV","Unit":"E Coy","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"12-Nov-25","Renewal Date":"12-Nov-28","Days Remaining":928},{"PNumber":"30150302","First Name":"Nigel","Surname":"CAIRNS","Adult Category":"CFAV","Unit":"Portadown","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"21-Nov-25","Renewal Date":"21-Nov-28","Days Remaining":937},{"PNumber":"","First Name":"Louise","Surname":"ELLIS","Adult Category":"Non Uniformed Volunteer","Unit":"Markethill","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"29-Dec-25","Renewal Date":"29-Dec-28","Days Remaining":975},{"PNumber":"30196101","First Name":"David James","Surname":"ZWECKER","Adult Category":"CFAV","Unit":"Richhill","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"08-Jan-26","Renewal Date":"08-Jan-29","Days Remaining":985},{"PNumber":"30421730","First Name":"Katie","Surname":"CASSELLS","Adult Category":"CFAV","Unit":"Markethill","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"09-Jan-26","Renewal Date":"09-Jan-29","Days Remaining":986},{"PNumber":"","First Name":"Anna","Surname":"LIGGETT","Adult Category":"CFAV","Unit":"Markethill","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"24-Jan-26","Renewal Date":"24-Jan-29","Days Remaining":1001},{"PNumber":"","First Name":"Paul","Surname":"MOCSARI","Adult Category":"CFAV","Unit":"Kilkeel","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"24-Mar-26","Renewal Date":"24-Mar-29","Days Remaining":1060},{"PNumber":"","First Name":"Dylan","Surname":"BOYCE","Adult Category":"CFAV","Unit":"Richhill","Disclosure Exempt":"No","Disclosure Type":"Access NI","Disclosure Agency":"Access NI","Applicant Reference":"","Application Date":"","Counter Signatory Date":"","ID Checks Completed":"","Certificate Issue Date":"16-Apr-26","Renewal Date":"16-Apr-29","Days Remaining":1083}],"fire":[{"PNumber":"30196102","Rank":"2Lt","Surname":"NUGENT","First Name":"Alana","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"29-Jul-25","Validity (Days remaining)":91},{"PNumber":"24221454","Rank":"Sgt","Surname":"CHAPMAN","First Name":"Reggie","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"02-Aug-25","Validity (Days remaining)":95},{"PNumber":"30453654","Rank":"Sgt","Surname":"WILLIS","First Name":"Jake","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"21-Sep-25","Validity (Days remaining)":145},{"PNumber":"30237276","Rank":"Capt","Surname":"RAFFERTY","First Name":"Simon James","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"28-Sep-25","Validity (Days remaining)":152},{"PNumber":"552936","Rank":"Lt","Surname":"MONTGOMERY","First Name":"Clifford James","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"29-Sep-25","Validity (Days remaining)":153},{"PNumber":"30043562","Rank":"SSgt","Surname":"JOHNSTON","First Name":"CAROLE","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"01-Oct-25","Validity (Days remaining)":155},{"PNumber":"30044424","Rank":"WO2","Surname":"GIBSON","First Name":"Hugh Alexander","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"03-Oct-25","Validity (Days remaining)":157},{"PNumber":"24921661","Rank":"Maj","Surname":"CHAPMAN","First Name":"Paul","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"12-Oct-25","Validity (Days remaining)":166},{"PNumber":"30404509","Rank":"Sgt","Surname":"FRIZZELL","First Name":"Andrew","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"12-Oct-25","Validity (Days remaining)":166},{"PNumber":"24768650","Rank":"PI","Surname":"MCELROY","First Name":"William","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"12-Oct-25","Validity (Days remaining)":166},{"PNumber":"C37613","Rank":"WO2","Surname":"STEVENSON","First Name":"Robert","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"12-Oct-25","Validity (Days remaining)":166},{"PNumber":"30340048","Rank":"Sgt","Surname":"HAMILTON","First Name":"Jessica","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"13-Oct-25","Validity (Days remaining)":167},{"PNumber":"30196101","Rank":"Sgt","Surname":"ZWECKER","First Name":"David James","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"13-Oct-25","Validity (Days remaining)":167},{"PNumber":"500574","Rank":"Capt","Surname":"ROBINSON","First Name":"David","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"16-Oct-25","Validity (Days remaining)":170},{"PNumber":"30404286","Rank":"Sgt","Surname":"HANNA","First Name":"Sam","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"17-Oct-25","Validity (Days remaining)":171},{"PNumber":"30096850","Rank":"Sgt","Surname":"SWAN","First Name":"Bryan","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"22-Oct-25","Validity (Days remaining)":176},{"PNumber":"30036779","Rank":"Sgt","Surname":"USHER","First Name":"Stuart","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"23-Oct-25","Validity (Days remaining)":177},{"PNumber":"30421730","Rank":"SSgt","Surname":"CASSELLS","First Name":"Katie","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"10-Nov-25","Validity (Days remaining)":195},{"PNumber":"30360894","Rank":"Sgt","Surname":"GARDINER","First Name":"Glenn","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"11-Nov-25","Validity (Days remaining)":196},{"PNumber":"30150302","Rank":"Sgt","Surname":"CAIRNS","First Name":"Nigel","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"13-Nov-25","Validity (Days remaining)":198},{"PNumber":"30291664","Rank":"SSgt","Surname":"TOTTEN","First Name":"Nicola Caroline","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"13-Nov-25","Validity (Days remaining)":198},{"PNumber":"24622054","Rank":"WO2","Surname":"WARRENER","First Name":"Robert","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"13-Nov-25","Validity (Days remaining)":198},{"PNumber":"C34456","Rank":"SSgt","Surname":"MCMAHON","First Name":"Robert","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"17-Nov-25","Validity (Days remaining)":202},{"PNumber":"30463165","Rank":"Sgt","Surname":"MCCLURE","First Name":"Alex","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"24-Nov-25","Validity (Days remaining)":209},{"PNumber":"30355504","Rank":"Sgt","Surname":"MCNALLY","First Name":"Zoe","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"25-Nov-25","Validity (Days remaining)":210},{"PNumber":"30463155","Rank":"Sgt","Surname":"GRAY","First Name":"Alanna","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"05-Dec-25","Validity (Days remaining)":220},{"PNumber":"30105928","Rank":"SSgt","Surname":"NUGENT","First Name":"Alan","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"09-Dec-25","Validity (Days remaining)":224},{"PNumber":"30463161","Rank":"Sgt","Surname":"GRAY","First Name":"Thomas","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"10-Dec-25","Validity (Days remaining)":225},{"PNumber":"30405166","Rank":"Sgt","Surname":"PETERS","First Name":"Jack","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"19-Jan-26","Validity (Days remaining)":265},{"PNumber":"30365562","Rank":"Sgt","Surname":"HANNA","First Name":"Taylor","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Pass","Date Achieved":"30-Jan-26","Validity (Days remaining)":276},{"PNumber":"","Rank":"PI","Surname":"BOYCE","First Name":"Dylan","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30453646","Rank":"PI","Surname":"COUGHLIN","First Name":"James","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"ELLIS","First Name":"Louise","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"LIGGETT","First Name":"Anna","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"MOCSARI","First Name":"Paul","Module":"MoD Fire Safety Awareness e-Learning Package","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""}],"heat":[{"PNumber":"C37613","Rank":"WO2","Surname":"STEVENSON","First Name":"Robert","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"09-May-25","Validity (Days remaining)":741},{"PNumber":"30291664","Rank":"SSgt","Surname":"TOTTEN","First Name":"Nicola Caroline","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"12-May-25","Validity (Days remaining)":744},{"PNumber":"552936","Rank":"Lt","Surname":"MONTGOMERY","First Name":"Clifford James","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"14-May-25","Validity (Days remaining)":746},{"PNumber":"30237276","Rank":"Capt","Surname":"RAFFERTY","First Name":"Simon James","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"14-May-25","Validity (Days remaining)":746},{"PNumber":"500574","Rank":"Capt","Surname":"ROBINSON","First Name":"David","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"14-May-25","Validity (Days remaining)":746},{"PNumber":"30421730","Rank":"SSgt","Surname":"CASSELLS","First Name":"Katie","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"16-May-25","Validity (Days remaining)":748},{"PNumber":"30404509","Rank":"Sgt","Surname":"FRIZZELL","First Name":"Andrew","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"16-May-25","Validity (Days remaining)":748},{"PNumber":"30036779","Rank":"Sgt","Surname":"USHER","First Name":"Stuart","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"29-May-25","Validity (Days remaining)":761},{"PNumber":"30043562","Rank":"SSgt","Surname":"JOHNSTON","First Name":"CAROLE","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"04-Jun-25","Validity (Days remaining)":767},{"PNumber":"30360894","Rank":"Sgt","Surname":"GARDINER","First Name":"Glenn","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"22-Jul-25","Validity (Days remaining)":815},{"PNumber":"30365562","Rank":"Sgt","Surname":"HANNA","First Name":"Taylor","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"22-Jul-25","Validity (Days remaining)":815},{"PNumber":"30404286","Rank":"Sgt","Surname":"HANNA","First Name":"Sam","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"22-Jul-25","Validity (Days remaining)":815},{"PNumber":"30105928","Rank":"SSgt","Surname":"NUGENT","First Name":"Alan","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"22-Jul-25","Validity (Days remaining)":815},{"PNumber":"30196102","Rank":"2Lt","Surname":"NUGENT","First Name":"Alana","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"22-Jul-25","Validity (Days remaining)":815},{"PNumber":"24921661","Rank":"Maj","Surname":"CHAPMAN","First Name":"Paul","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"12-Oct-25","Validity (Days remaining)":897},{"PNumber":"30150302","Rank":"Sgt","Surname":"CAIRNS","First Name":"Nigel","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"13-Nov-25","Validity (Days remaining)":929},{"PNumber":"24622054","Rank":"WO2","Surname":"WARRENER","First Name":"Robert","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"13-Nov-25","Validity (Days remaining)":929},{"PNumber":"30340048","Rank":"Sgt","Surname":"HAMILTON","First Name":"Jessica","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"14-Nov-25","Validity (Days remaining)":930},{"PNumber":"C34456","Rank":"SSgt","Surname":"MCMAHON","First Name":"Robert","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"17-Nov-25","Validity (Days remaining)":933},{"PNumber":"24768650","Rank":"PI","Surname":"MCELROY","First Name":"William","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"18-Nov-25","Validity (Days remaining)":934},{"PNumber":"30096850","Rank":"Sgt","Surname":"SWAN","First Name":"Bryan","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"22-Nov-25","Validity (Days remaining)":938},{"PNumber":"30453654","Rank":"Sgt","Surname":"WILLIS","First Name":"Jake","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"23-Nov-25","Validity (Days remaining)":939},{"PNumber":"30355504","Rank":"Sgt","Surname":"MCNALLY","First Name":"Zoe","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"25-Nov-25","Validity (Days remaining)":941},{"PNumber":"24221454","Rank":"Sgt","Surname":"CHAPMAN","First Name":"Reggie","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"28-Nov-25","Validity (Days remaining)":944},{"PNumber":"30463165","Rank":"Sgt","Surname":"MCCLURE","First Name":"Alex","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"29-Nov-25","Validity (Days remaining)":945},{"PNumber":"30405166","Rank":"Sgt","Surname":"PETERS","First Name":"Jack","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"19-Jan-26","Validity (Days remaining)":996},{"PNumber":"30196101","Rank":"Sgt","Surname":"ZWECKER","First Name":"David James","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Pass","Date Achieved":"11-Mar-26","Validity (Days remaining)":1047},{"PNumber":"","Rank":"PI","Surname":"BOYCE","First Name":"Dylan","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30453646","Rank":"PI","Surname":"COUGHLIN","First Name":"James","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"ELLIS","First Name":"Louise","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30044424","Rank":"WO2","Surname":"GIBSON","First Name":"Hugh Alexander","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30463155","Rank":"Sgt","Surname":"GRAY","First Name":"Alanna","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30463161","Rank":"Sgt","Surname":"GRAY","First Name":"Thomas","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"LIGGETT","First Name":"Anna","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"MOCSARI","First Name":"Paul","Module":"Army Cadet Heat Illness and Cold Injury Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""}],"medication":[{"PNumber":"30196102","Rank":"2Lt","Surname":"NUGENT","First Name":"Alana","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"18-Feb-22","Validity (Days remaining)":""},{"PNumber":"30237276","Rank":"Capt","Surname":"RAFFERTY","First Name":"Simon James","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"07-Apr-22","Validity (Days remaining)":""},{"PNumber":"24768650","Rank":"PI","Surname":"MCELROY","First Name":"William","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"14-Oct-22","Validity (Days remaining)":""},{"PNumber":"C34456","Rank":"SSgt","Surname":"MCMAHON","First Name":"Robert","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"04-Nov-22","Validity (Days remaining)":""},{"PNumber":"30105928","Rank":"SSgt","Surname":"NUGENT","First Name":"Alan","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"21-Nov-22","Validity (Days remaining)":""},{"PNumber":"30404509","Rank":"Sgt","Surname":"FRIZZELL","First Name":"Andrew","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"08-Feb-23","Validity (Days remaining)":""},{"PNumber":"30340048","Rank":"Sgt","Surname":"HAMILTON","First Name":"Jessica","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"31-Mar-23","Validity (Days remaining)":""},{"PNumber":"24221454","Rank":"Sgt","Surname":"CHAPMAN","First Name":"Reggie","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"01-Sep-23","Validity (Days remaining)":""},{"PNumber":"552936","Rank":"Lt","Surname":"MONTGOMERY","First Name":"Clifford James","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"05-Sep-23","Validity (Days remaining)":""},{"PNumber":"24921661","Rank":"Maj","Surname":"CHAPMAN","First Name":"Paul","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"09-Sep-23","Validity (Days remaining)":""},{"PNumber":"30355504","Rank":"Sgt","Surname":"MCNALLY","First Name":"Zoe","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"09-Jan-24","Validity (Days remaining)":""},{"PNumber":"30421730","Rank":"SSgt","Surname":"CASSELLS","First Name":"Katie","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"12-Aug-24","Validity (Days remaining)":""},{"PNumber":"30365562","Rank":"Sgt","Surname":"HANNA","First Name":"Taylor","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"23-Aug-24","Validity (Days remaining)":""},{"PNumber":"30360894","Rank":"Sgt","Surname":"GARDINER","First Name":"Glenn","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"26-Feb-25","Validity (Days remaining)":""},{"PNumber":"30291664","Rank":"SSgt","Surname":"TOTTEN","First Name":"Nicola Caroline","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"26-Feb-25","Validity (Days remaining)":""},{"PNumber":"30043562","Rank":"SSgt","Surname":"JOHNSTON","First Name":"CAROLE","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"18-Mar-25","Validity (Days remaining)":""},{"PNumber":"C37613","Rank":"WO2","Surname":"STEVENSON","First Name":"Robert","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"18-Mar-25","Validity (Days remaining)":""},{"PNumber":"30044424","Rank":"WO2","Surname":"GIBSON","First Name":"Hugh Alexander","Module":"Medication Management Awareness Course","Result":"Pass","Date Achieved":"17-Mar-26","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"BOYCE","First Name":"Dylan","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30150302","Rank":"Sgt","Surname":"CAIRNS","First Name":"Nigel","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30453646","Rank":"PI","Surname":"COUGHLIN","First Name":"James","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"ELLIS","First Name":"Louise","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30463155","Rank":"Sgt","Surname":"GRAY","First Name":"Alanna","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30463161","Rank":"Sgt","Surname":"GRAY","First Name":"Thomas","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30404286","Rank":"Sgt","Surname":"HANNA","First Name":"Sam","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"LIGGETT","First Name":"Anna","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30463165","Rank":"Sgt","Surname":"MCCLURE","First Name":"Alex","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"MOCSARI","First Name":"Paul","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30405166","Rank":"Sgt","Surname":"PETERS","First Name":"Jack","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"500574","Rank":"Capt","Surname":"ROBINSON","First Name":"David","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30096850","Rank":"Sgt","Surname":"SWAN","First Name":"Bryan","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30036779","Rank":"Sgt","Surname":"USHER","First Name":"Stuart","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"24622054","Rank":"WO2","Surname":"WARRENER","First Name":"Robert","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30453654","Rank":"Sgt","Surname":"WILLIS","First Name":"Jake","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30196101","Rank":"Sgt","Surname":"ZWECKER","First Name":"David James","Module":"Medication Management Awareness Course","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""}],"rfi":[{"PNumber":"30196102","Rank":"2Lt","Surname":"NUGENT","First Name":"Alana","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"03-Oct-23","Validity (Days remaining)":157},{"PNumber":"30291664","Rank":"SSgt","Surname":"TOTTEN","First Name":"Nicola Caroline","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"03-Dec-23","Validity (Days remaining)":218},{"PNumber":"30421730","Rank":"SSgt","Surname":"CASSELLS","First Name":"Katie","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"18-Dec-23","Validity (Days remaining)":233},{"PNumber":"24921661","Rank":"Maj","Surname":"CHAPMAN","First Name":"Paul","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"20-Dec-23","Validity (Days remaining)":235},{"PNumber":"30360894","Rank":"Sgt","Surname":"GARDINER","First Name":"Glenn","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"16-Jan-24","Validity (Days remaining)":262},{"PNumber":"552936","Rank":"Lt","Surname":"MONTGOMERY","First Name":"Clifford James","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"05-Feb-24","Validity (Days remaining)":282},{"PNumber":"30096850","Rank":"Sgt","Surname":"SWAN","First Name":"Bryan","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"13-Feb-24","Validity (Days remaining)":290},{"PNumber":"30196101","Rank":"Sgt","Surname":"ZWECKER","First Name":"David James","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"15-Feb-24","Validity (Days remaining)":292},{"PNumber":"C34456","Rank":"SSgt","Surname":"MCMAHON","First Name":"Robert","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"16-Mar-24","Validity (Days remaining)":321},{"PNumber":"500574","Rank":"Capt","Surname":"ROBINSON","First Name":"David","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"21-Mar-24","Validity (Days remaining)":326},{"PNumber":"30105928","Rank":"SSgt","Surname":"NUGENT","First Name":"Alan","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"28-Mar-24","Validity (Days remaining)":333},{"PNumber":"30044424","Rank":"WO2","Surname":"GIBSON","First Name":"Hugh Alexander","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"09-Apr-24","Validity (Days remaining)":345},{"PNumber":"30150302","Rank":"Sgt","Surname":"CAIRNS","First Name":"Nigel","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"18-Apr-24","Validity (Days remaining)":354},{"PNumber":"30340048","Rank":"Sgt","Surname":"HAMILTON","First Name":"Jessica","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"20-Oct-24","Validity (Days remaining)":539},{"PNumber":"30453654","Rank":"Sgt","Surname":"WILLIS","First Name":"Jake","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"02-Jul-25","Validity (Days remaining)":795},{"PNumber":"30237276","Rank":"Capt","Surname":"RAFFERTY","First Name":"Simon James","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"22-Aug-25","Validity (Days remaining)":846},{"PNumber":"30404509","Rank":"Sgt","Surname":"FRIZZELL","First Name":"Andrew","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"09-Sep-25","Validity (Days remaining)":864},{"PNumber":"C37613","Rank":"WO2","Surname":"STEVENSON","First Name":"Robert","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"21-Oct-25","Validity (Days remaining)":906},{"PNumber":"30036779","Rank":"Sgt","Surname":"USHER","First Name":"Stuart","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"23-Oct-25","Validity (Days remaining)":908},{"PNumber":"30463165","Rank":"Sgt","Surname":"MCCLURE","First Name":"Alex","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"22-Nov-25","Validity (Days remaining)":938},{"PNumber":"30463155","Rank":"Sgt","Surname":"GRAY","First Name":"Alanna","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"24-Nov-25","Validity (Days remaining)":940},{"PNumber":"30355504","Rank":"Sgt","Surname":"MCNALLY","First Name":"Zoe","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"25-Nov-25","Validity (Days remaining)":941},{"PNumber":"24221454","Rank":"Sgt","Surname":"CHAPMAN","First Name":"Reggie","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"30-Nov-25","Validity (Days remaining)":946},{"PNumber":"30463161","Rank":"Sgt","Surname":"GRAY","First Name":"Thomas","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"30-Nov-25","Validity (Days remaining)":946},{"PNumber":"24768650","Rank":"PI","Surname":"MCELROY","First Name":"William","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"02-Dec-25","Validity (Days remaining)":948},{"PNumber":"30043562","Rank":"SSgt","Surname":"JOHNSTON","First Name":"CAROLE","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"13-Jan-26","Validity (Days remaining)":990},{"PNumber":"30405166","Rank":"Sgt","Surname":"PETERS","First Name":"Jack","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"19-Jan-26","Validity (Days remaining)":996},{"PNumber":"30404286","Rank":"Sgt","Surname":"HANNA","First Name":"Sam","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"21-Jan-26","Validity (Days remaining)":998},{"PNumber":"30365562","Rank":"Sgt","Surname":"HANNA","First Name":"Taylor","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"26-Jan-26","Validity (Days remaining)":1003},{"PNumber":"24622054","Rank":"WO2","Surname":"WARRENER","First Name":"Robert","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Pass","Date Achieved":"26-Mar-26","Validity (Days remaining)":1062},{"PNumber":"","Rank":"PI","Surname":"BOYCE","First Name":"Dylan","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30453646","Rank":"PI","Surname":"COUGHLIN","First Name":"James","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"ELLIS","First Name":"Louise","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"LIGGETT","First Name":"Anna","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"MOCSARI","First Name":"Paul","Module":"Army Cadets Data Protection - Responsible for Information (DLE)","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""}],"safeguarding":[{"PNumber":"30150302","Rank":"Sgt","Surname":"CAIRNS","First Name":"Nigel","Module":"Safeguarding Annual Refresher Online","Result":"Expired Qualification","Date Achieved":"24-Feb-25","Validity (Days remaining)":-36},{"PNumber":"30365562","Rank":"Sgt","Surname":"HANNA","First Name":"Taylor","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"12-Apr-25","Validity (Days remaining)":13},{"PNumber":"30405166","Rank":"Sgt","Surname":"PETERS","First Name":"Jack","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"10-May-25","Validity (Days remaining)":42},{"PNumber":"24622054","Rank":"WO2","Surname":"WARRENER","First Name":"Robert","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"28-Aug-25","Validity (Days remaining)":152},{"PNumber":"30453654","Rank":"Sgt","Surname":"WILLIS","First Name":"Jake","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"21-Sep-25","Validity (Days remaining)":175},{"PNumber":"30096850","Rank":"Sgt","Surname":"SWAN","First Name":"Bryan","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"27-Oct-25","Validity (Days remaining)":212},{"PNumber":"24768650","Rank":"PI","Surname":"MCELROY","First Name":"William","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"29-Dec-25","Validity (Days remaining)":275},{"PNumber":"552936","Rank":"Lt","Surname":"MONTGOMERY","First Name":"Clifford James","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"29-Dec-25","Validity (Days remaining)":275},{"PNumber":"C37613","Rank":"WO2","Surname":"STEVENSON","First Name":"Robert","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"29-Dec-25","Validity (Days remaining)":275},{"PNumber":"30036779","Rank":"Sgt","Surname":"USHER","First Name":"Stuart","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"29-Dec-25","Validity (Days remaining)":275},{"PNumber":"30404286","Rank":"Sgt","Surname":"HANNA","First Name":"Sam","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"01-Jan-26","Validity (Days remaining)":278},{"PNumber":"24921661","Rank":"Maj","Surname":"CHAPMAN","First Name":"Paul","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"02-Jan-26","Validity (Days remaining)":279},{"PNumber":"30421730","Rank":"SSgt","Surname":"CASSELLS","First Name":"Katie","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"03-Jan-26","Validity (Days remaining)":280},{"PNumber":"30340048","Rank":"Sgt","Surname":"HAMILTON","First Name":"Jessica","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"06-Jan-26","Validity (Days remaining)":283},{"PNumber":"30237276","Rank":"Capt","Surname":"RAFFERTY","First Name":"Simon James","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"14-Jan-26","Validity (Days remaining)":291},{"PNumber":"30043562","Rank":"SSgt","Surname":"JOHNSTON","First Name":"CAROLE","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"19-Jan-26","Validity (Days remaining)":296},{"PNumber":"30291664","Rank":"SSgt","Surname":"TOTTEN","First Name":"Nicola Caroline","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"24-Jan-26","Validity (Days remaining)":301},{"PNumber":"C34456","Rank":"SSgt","Surname":"MCMAHON","First Name":"Robert","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"25-Jan-26","Validity (Days remaining)":302},{"PNumber":"24221454","Rank":"Sgt","Surname":"CHAPMAN","First Name":"Reggie","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"26-Jan-26","Validity (Days remaining)":303},{"PNumber":"30404509","Rank":"Sgt","Surname":"FRIZZELL","First Name":"Andrew","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"29-Jan-26","Validity (Days remaining)":305},{"PNumber":"30196102","Rank":"2Lt","Surname":"NUGENT","First Name":"Alana","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"28-Jan-26","Validity (Days remaining)":305},{"PNumber":"30355504","Rank":"Sgt","Surname":"MCNALLY","First Name":"Zoe","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"01-Feb-26","Validity (Days remaining)":306},{"PNumber":"500574","Rank":"Capt","Surname":"ROBINSON","First Name":"David","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"12-Feb-26","Validity (Days remaining)":317},{"PNumber":"30196101","Rank":"Sgt","Surname":"ZWECKER","First Name":"David James","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"05-Mar-26","Validity (Days remaining)":341},{"PNumber":"30360894","Rank":"Sgt","Surname":"GARDINER","First Name":"Glenn","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"07-Mar-26","Validity (Days remaining)":343},{"PNumber":"30044424","Rank":"WO2","Surname":"GIBSON","First Name":"Hugh Alexander","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"23-Mar-26","Validity (Days remaining)":359},{"PNumber":"30105928","Rank":"SSgt","Surname":"NUGENT","First Name":"Alan","Module":"Safeguarding Annual Refresher Online","Result":"Pass","Date Achieved":"25-Mar-26","Validity (Days remaining)":361},{"PNumber":"","Rank":"PI","Surname":"BOYCE","First Name":"Dylan","Module":"Safeguarding Annual Refresher Online","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30453646","Rank":"PI","Surname":"COUGHLIN","First Name":"James","Module":"Safeguarding Annual Refresher Online","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"ELLIS","First Name":"Louise","Module":"Safeguarding Annual Refresher Online","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30463155","Rank":"Sgt","Surname":"GRAY","First Name":"Alanna","Module":"Safeguarding Annual Refresher Online","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30463161","Rank":"Sgt","Surname":"GRAY","First Name":"Thomas","Module":"Safeguarding Annual Refresher Online","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"LIGGETT","First Name":"Anna","Module":"Safeguarding Annual Refresher Online","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"30463165","Rank":"Sgt","Surname":"MCCLURE","First Name":"Alex","Module":"Safeguarding Annual Refresher Online","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""},{"PNumber":"","Rank":"PI","Surname":"MOCSARI","First Name":"Paul","Module":"Safeguarding Annual Refresher Online","Result":"Not Taken","Date Achieved":"","Validity (Days remaining)":""}]};
+
+// ── Build person map ───────────────────────────────────────────
+const personMap = {}; // key = "SURNAME FIRSTNAME"
+
+function personKey(rec) {
+  return (rec['Surname'] || rec['Surname']).toUpperCase() + '|' + (rec['First Name'] || '').toUpperCase();
+}
+
+// Seed from AccessNI (has Unit and Category)
+RAW.accessNI.forEach(r => {
+  const k = personKey(r);
+  personMap[k] = {
+    name: r['First Name'] + ' ' + r['Surname'],
+    surname: r['Surname'],
+    firstName: r['First Name'],
+    pnum: r['PNumber'] || '',
+    rank: '',
+    unit: r['Unit'] || '',
+    category: r['Adult Category'] || '',
+    accessNI: { days: r['Days Remaining'], renewal: r['Renewal Date'], issued: r['Certificate Issue Date'], appDate: r['Application Date'] || '', csDate: r['Counter Signatory Date'] || '', idDate: r['ID Checks Completed'] || '' },
+    safeguarding: null, fire: null, rfi: null, heat: null, medication: null
+  };
+});
+
+// Merge other modules
+const MODULES = { fire: 'fire', heat: 'heat', medication: 'medication', rfi: 'rfi', safeguarding: 'safeguarding' };
+Object.entries(MODULES).forEach(([key, src]) => {
+  RAW[src].forEach(r => {
+    const k = personKey(r);
+    if (!personMap[k]) {
+      personMap[k] = { name: r['First Name'] + ' ' + r['Surname'], surname: r['Surname'], firstName: r['First Name'], pnum: r['PNumber'] || '', rank: r['Rank'] || '', unit: '', category: '', accessNI: null, safeguarding: null, fire: null, rfi: null, heat: null, medication: null };
+    }
+    if (r['Rank']) personMap[k].rank = r['Rank'];
+    const days = r['Validity (Days remaining)'];
+    personMap[k][key] = {
+      days: days === '' || days === null || days === undefined ? null : Number(days),
+      date: r['Date Achieved'] || '',
+      result: r['Result'] || ''
+    };
+  });
+});
+
+const PEOPLE = Object.values(personMap).sort((a,b) => a.surname.localeCompare(b.surname));
+
+// ── Helpers ────────────────────────────────────────────────────
+function statusOf(d, result) {
+  if (result === 'Not Taken') return 'none';
+  if (result === 'Expired Qualification') return 'expired';
+  if (d === null || d === undefined) return 'ok'; // medication has no expiry
+  if (d < 0) return 'expired';
+  if (d <= 30) return 'urgent';
+  if (d <= 90) return 'warn';
+  return 'ok';
+}
+
+function statusOfAccessNI(d) {
+  if (d === null || d === undefined) return 'ok';
+  if (d < 0) return 'expired';
+  if (d <= 30) return 'urgent';
+  if (d <= 90) return 'warn';
+  return 'ok';
+}
+
+function worstStatus(p) {
+  const statuses = ['expired','urgent','warn','none','ok'];
+  const all = [];
+  if (p.accessNI) all.push(statusOfAccessNI(p.accessNI.days));
+  ['safeguarding','fire','rfi','heat','medication'].forEach(k => {
+    if (p[k]) all.push(statusOf(p[k].days, p[k].result));
+  });
+  for (const s of statuses) if (all.includes(s)) return s;
+  return 'ok';
+}
+
+function pillClass(s) {
+  if (s === 'expired') return 'pill-expired';
+  if (s === 'urgent') return 'pill-urgent';
+  if (s === 'warn') return 'pill-warn';
+  if (s === 'ok') return 'pill-ok';
+  return 'pill-none';
+}
+
+function pillLabel(days, result, isAccessNI) {
+  if (!isAccessNI && result === 'Not Taken') return 'NOT TAKEN';
+  if (!isAccessNI && result === 'Expired Qualification') return 'EXPIRED';
+  if (days === null || days === undefined) return isAccessNI ? '?' : 'NO EXPIRY';
+  if (days < 0) return `${Math.abs(days)}d OVER`;
+  return `${days}d`;
+}
+
+function daysColor(s) {
+  if (s === 'expired') return 'color:#c81e1e';
+  if (s === 'urgent') return 'color:#92400e';
+  if (s === 'warn') return 'color:#b45309';
+  if (s === 'ok') return 'color:#065f46';
+  return 'color:#6b7280';
+}
+
+function borderClass(s) {
+  if (s === 'expired') return 'border-red';
+  if (s === 'urgent' || s === 'warn') return 'border-amber';
+  if (s === 'ok') return 'border-green';
+  return 'border-grey';
+}
+
+// ── Stats ──────────────────────────────────────────────────────
+function buildStats() {
+  const tasks = ['accessNI','safeguarding','fire','rfi','heat','medication'];
+  const labels = ['Access NI','Safeguarding','Fire Safety','RFI / Data','Heat & Cold','Medication'];
+  const bar = document.getElementById('stats-bar');
+  bar.innerHTML = '';
+
+  tasks.forEach((t, i) => {
+    let exp = 0, urg = 0, warn = 0, ok = 0, none = 0;
+    PEOPLE.forEach(p => {
+      let s;
+      if (t === 'accessNI') { s = p.accessNI ? statusOfAccessNI(p.accessNI.days) : 'ok'; }
+      else { s = p[t] ? statusOf(p[t].days, p[t].result) : 'none'; }
+      if (s === 'expired') exp++;
+      else if (s === 'urgent') urg++;
+      else if (s === 'warn') warn++;
+      else if (s === 'none') none++;
+      else ok++;
+    });
+    bar.innerHTML += `<div class="stat-card" onclick="filterByTask('${t}')" title="Click to filter by this task">
+      <div class="stat-label">${labels[i]}</div>
+      <div class="stat-counts">
+        <span class="stat-num red">${exp+urg}</span>
+        <span class="stat-detail">critical</span>
+        <span class="stat-num amber" style="margin-left:6px">${warn}</span>
+        <span class="stat-detail">due soon</span>
+        <span class="stat-num green" style="margin-left:6px">${ok}</span>
+        <span class="stat-detail">ok</span>
+      </div>
+    </div>`;
+  });
+}
+
+// ── Units dropdown ─────────────────────────────────────────────
+function buildUnits() {
+  const units = [...new Set(PEOPLE.map(p => p.unit).filter(Boolean))].sort();
+  const sel = document.getElementById('filter-unit');
+  units.forEach(u => { sel.innerHTML += `<option value="${u}">${u}</option>`; });
+}
+
+// ── Live clock ─────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('live-time').textContent = now.toLocaleTimeString('en-GB') + ' UTC';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Sorting ────────────────────────────────────────────────────
+let sortCol = 'worst', sortDir = 1;
+const taskCols = { accessni: 'accessNI', safeguarding: 'safeguarding', fire: 'fire', rfi: 'rfi', heat: 'heat', medication: 'medication' };
+
+function sortVal(p, col) {
+  if (col === 'name') return p.surname;
+  if (col === 'rank') return p.rank;
+  if (col === 'unit') return p.unit;
+  if (col === 'worst') {
+    const order = { expired: 0, urgent: 1, warn: 2, none: 3, ok: 4 };
+    return order[worstStatus(p)];
+  }
+  const k = taskCols[col] || col;
+  if (k === 'accessNI') return p.accessNI ? (p.accessNI.days ?? 9999) : 9999;
+  if (p[k]) return p[k].result === 'Not Taken' ? 9998 : (p[k].days ?? -9999);
+  return 9999;
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortDir *= -1; else sortDir = 1;
+  sortCol = col;
+  renderTable();
+}
+
+// ── Filters ────────────────────────────────────────────────────
+let filterTask = '';
+
+function filterByTask(task) {
+  filterTask = task;
+  document.getElementById('filter-status').value = '';
+  renderTable();
+}
+
+function matchesFilters(p) {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const unit = document.getElementById('filter-unit').value;
+  const statusF = document.getElementById('filter-status').value;
+
+  if (q) {
+    const hay = (p.name + p.pnum + p.unit + p.rank).toLowerCase();
+    if (!hay.includes(q)) return false;
+  }
+  if (unit && p.unit !== unit) return false;
+  if (statusF) {
+    const w = worstStatus(p);
+    if (statusF === 'expired' && !['expired'].includes(w)) return false;
+    if (statusF === 'urgent' && w !== 'urgent') return false;
+    if (statusF === 'warn' && w !== 'warn') return false;
+    if (statusF === 'ok' && w !== 'ok') return false;
+    if (statusF === 'none' && w !== 'none') return false;
+  }
+  return true;
+}
+
+// ── Table render ───────────────────────────────────────────────
+let expandedRow = null;
+
+function renderTable() {
+  const body = document.getElementById('table-body');
+  const noRes = document.getElementById('no-results');
+  const sorted = [...PEOPLE].filter(matchesFilters).sort((a,b) => {
+    const va = sortVal(a, sortCol), vb = sortVal(b, sortCol);
+    if (va < vb) return -1 * sortDir;
+    if (va > vb) return 1 * sortDir;
+    return 0;
+  });
+
+  body.innerHTML = '';
+  noRes.style.display = sorted.length === 0 ? 'block' : 'none';
+
+  sorted.forEach(p => {
+    const key = p.name;
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><span class="td-name">${p.firstName} ${p.surname}</span>${p.pnum ? `<br><span style="font-size:10px;color:var(--muted);font-family:'Share Tech Mono',monospace">${p.pnum}</span>` : ''}</td>
+      <td><span class="td-rank">${p.rank || '—'}</span></td>
+      <td><span class="td-unit">${p.unit || '—'}</span></td>
+      ${renderTaskCell(p.accessNI ? { days: p.accessNI.days, result: 'Pass' } : null, 'accessNI')}
+      ${renderTaskCell(p.safeguarding, 'mod')}
+      ${renderTaskCell(p.fire, 'mod')}
+      ${renderTaskCell(p.rfi, 'mod')}
+      ${renderTaskCell(p.heat, 'mod')}
+      ${renderTaskCell(p.medication, 'mod')}
+      <td>${overallBadge(p)}</td>
+    `;
+    row.onclick = () => toggleExpand(p, row);
+    body.appendChild(row);
+
+    // Expand detail row placeholder
+    const expRow = document.createElement('tr');
+    expRow.className = 'expand-row';
+    expRow.id = 'exp-' + encodeKey(key);
+    expRow.style.display = 'none';
+    expRow.innerHTML = `<td colspan="10">${buildExpand(p)}</td>`;
+    body.appendChild(expRow);
+  });
+
+  buildAlertBanner();
+}
+
+function encodeKey(k) { return k.replace(/[^a-zA-Z0-9]/g,'_'); }
+
+function renderTaskCell(data, type) {
+  if (!data) return `<td><span class="comp-pill pill-none">—</span></td>`;
+  const days = data.days;
+  const result = data.result;
+  const s = type === 'accessNI' ? statusOfAccessNI(days) : statusOf(days, result);
+  const label = pillLabel(days, result, type === 'accessNI');
+  return `<td><span class="comp-pill ${pillClass(s)}">${label}</span></td>`;
+}
+
+function overallBadge(p) {
+  const s = worstStatus(p);
+  const labels = { expired: '⚠ CRITICAL', urgent: '⚡ URGENT', warn: '◐ DUE SOON', ok: '✓ CURRENT', none: '○ INCOMPLETE' };
+  return `<span class="comp-pill ${pillClass(s)}" style="min-width:90px">${labels[s] || s}</span>`;
+}
+
+function buildExpand(p) {
+  const tasks = [
+    { label: 'Access NI', key: 'accessNI', isANI: true },
+    { label: 'Safeguarding', key: 'safeguarding' },
+    { label: 'Fire Safety', key: 'fire' },
+    { label: 'RFI / Data Protection', key: 'rfi' },
+    { label: 'Heat & Cold Injury', key: 'heat' },
+    { label: 'Medication Mgmt', key: 'medication' },
+  ];
+  let cards = '';
+  tasks.forEach(t => {
+    let days, result, date, extra = '';
+    if (t.isANI) {
+      const a = p.accessNI;
+      if (!a) { cards += `<div class="detail-card"><div class="detail-title">ACCESS NI</div><div style="color:var(--muted);font-size:12px">No record</div></div>`; return; }
+      days = a.days; result = 'Pass'; date = a.renewal;
+      extra = `<div class="ani-cols">
+        <div class="ani-field"><span>Issued:</span><span>${a.issued||'—'}</span></div>
+        <div class="ani-field"><span>Renewal:</span><span>${a.renewal||'—'}</span></div>
+        <div class="ani-field"><span>App Date:</span><span>${a.appDate||'—'}</span></div>
+        <div class="ani-field"><span>CS Date:</span><span>${a.csDate||'—'}</span></div>
+      </div>`;
+    } else {
+      const d = p[t.key];
+      if (!d) { cards += `<div class="detail-card"><div class="detail-title">${t.label.toUpperCase()}</div><div style="color:var(--muted);font-size:12px">No record</div></div>`; return; }
+      days = d.days; result = d.result; date = d.date;
+    }
+    const s = t.isANI ? statusOfAccessNI(days) : statusOf(days, result);
+    const dLabel = days === null || days === undefined ? (result === 'Not Taken' ? 'Not taken' : 'No expiry') : (days < 0 ? `${Math.abs(days)} days overdue` : `${days} days remaining`);
+    cards += `<div class="detail-card border-${s === 'expired' ? 'red' : s === 'urgent'||s==='warn' ? 'amber' : s === 'ok' ? 'green' : 'grey'}" style="border-top:2px solid ${s==='expired'?'var(--red)':s==='urgent'||s==='warn'?'var(--amber)':s==='ok'?'var(--green)':'var(--muted)'}">
+      <div class="detail-title">${t.label.toUpperCase()}</div>
+      <div class="detail-days" style="${daysColor(s)}">${pillLabel(days, result, t.isANI)}</div>
+      <div class="detail-date">${date ? 'Achieved: '+date : ''}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">${dLabel}</div>
+      ${extra}
+    </div>`;
+  });
+  return `<div class="expand-inner">${cards}</div>`;
+}
+
+function toggleExpand(p, row) {
+  const expId = 'exp-' + encodeKey(p.name);
+  const expRow = document.getElementById(expId);
+  const isOpen = expRow.style.display !== 'none';
+  // Close all
+  document.querySelectorAll('.expand-row').forEach(r => r.style.display = 'none');
+  document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('expanded'));
+  if (!isOpen) {
+    expRow.style.display = '';
+    row.classList.add('expanded');
+  }
+}
+
+// ── Alert banner ───────────────────────────────────────────────
+function buildAlertBanner() {
+  const critical = PEOPLE.filter(p => ['expired','urgent'].includes(worstStatus(p)));
+  const banner = document.getElementById('alert-banner');
+  const text = document.getElementById('alert-text');
+  if (critical.length > 0) {
+    text.textContent = `${critical.length} personnel require immediate action — expired or due within 30 days`;
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+// ── Task View ──────────────────────────────────────────────────
+const TASK_DEFS = [
+  { key: 'safeguarding', label: 'Safeguarding Annual Refresher', icon: '🛡' },
+  { key: 'fire', label: 'MoD Fire Safety Awareness', icon: '🔥' },
+  { key: 'rfi', label: 'RFI / Data Protection (DLE)', icon: '🔒' },
+  { key: 'heat', label: 'Heat Illness & Cold Injury', icon: '🌡' },
+  { key: 'medication', label: 'Medication Management', icon: '💊' },
+  { key: 'accessNI', label: 'Access NI Disclosure', icon: '📋' },
+];
+
+function renderTaskView() {
+  const container = document.getElementById('task-view-content');
+  container.innerHTML = '';
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const unit = document.getElementById('filter-unit').value;
+
+  TASK_DEFS.forEach(task => {
+    let people = PEOPLE.filter(p => {
+      if (q) { const hay = (p.name + p.pnum + p.unit + p.rank).toLowerCase(); if (!hay.includes(q)) return false; }
+      if (unit && p.unit !== unit) return false;
+      return true;
+    });
+
+    const sorted = [...people].sort((a, b) => {
+      const getD = p => task.key === 'accessNI' ? (p.accessNI ? p.accessNI.days : 9999) : (p[task.key] ? (p[task.key].result === 'Not Taken' ? 9998 : (p[task.key].days ?? 9999)) : 9999);
+      return (getD(a) ?? 9999) - (getD(b) ?? 9999);
+    });
+
+    const section = document.createElement('div');
+    section.className = 'task-section';
+
+    const counts = { expired:0, urgent:0, warn:0, ok:0, none:0 };
+    sorted.forEach(p => {
+      let s;
+      if (task.key === 'accessNI') s = p.accessNI ? statusOfAccessNI(p.accessNI.days) : 'none';
+      else s = p[task.key] ? statusOf(p[task.key].days, p[task.key].result) : 'none';
+      counts[s]++;
+    });
+
+    section.innerHTML = `<div class="task-section-header">
+      <span style="font-size:20px">${task.icon}</span>
+      <span class="task-section-title">${task.label}</span>
+      <span class="count-tag">${sorted.length} personnel</span>
+      <span style="margin-left:4px;font-size:12px;color:var(--red)">${counts.expired} expired</span>
+      <span style="font-size:12px;color:var(--amber);margin-left:8px">${counts.urgent+counts.warn} due soon</span>
+      <span style="font-size:12px;color:var(--muted);margin-left:8px">${counts.none} not taken</span>
+    </div>
+    <div class="task-grid" id="tg-${task.key}"></div>`;
+
+    container.appendChild(section);
+    const grid = section.querySelector('.task-grid');
+
+    sorted.forEach(p => {
+      let days, result, date, s;
+      if (task.key === 'accessNI') {
+        if (!p.accessNI) return;
+        days = p.accessNI.days; result = 'Pass'; date = p.accessNI.renewal;
+        s = statusOfAccessNI(days);
+      } else {
+        if (!p[task.key]) { s = 'none'; days = null; result = 'Not Taken'; date = ''; }
+        else { days = p[task.key].days; result = p[task.key].result; date = p[task.key].date; s = statusOf(days, result); }
+      }
+      const dLabel = days === null ? (result === 'Not Taken' ? 'Not taken' : 'No expiry recorded') : (days < 0 ? `${Math.abs(days)}d overdue` : `${days} days remaining`);
+      const card = document.createElement('div');
+      card.className = `task-card ${borderClass(s)}`;
+      card.innerHTML = `<div class="tc-rank">${p.rank || ''} · ${p.unit || '—'}</div>
+        <div class="tc-name">${p.firstName} ${p.surname}</div>
+        <div class="tc-days" style="${daysColor(s)}">${pillLabel(days, result, task.key === 'accessNI')}</div>
+        <div class="tc-date">${date ? 'Due: ' + date : dLabel}</div>`;
+      grid.appendChild(card);
+    });
+  });
+}
+
+// ── View toggle ────────────────────────────────────────────────
+let currentView = 'personnel';
+function setView(v) {
+  currentView = v;
+  document.getElementById('view-personnel').style.display = v === 'personnel' ? '' : 'none';
+  document.getElementById('view-tasks').style.display = v === 'tasks' ? '' : 'none';
+  document.getElementById('btn-personnel').classList.toggle('active', v === 'personnel');
+  document.getElementById('btn-tasks').classList.toggle('active', v === 'tasks');
+  if (v === 'tasks') renderTaskView();
+}
+
+// ── Events ─────────────────────────────────────────────────────
+document.getElementById('search').addEventListener('input', () => { renderTable(); if (currentView === 'tasks') renderTaskView(); });
+document.getElementById('filter-unit').addEventListener('change', () => { renderTable(); if (currentView === 'tasks') renderTaskView(); });
+document.getElementById('filter-status').addEventListener('change', () => { renderTable(); });
+
+// ── Init ───────────────────────────────────────────────────────
+buildStats();
+buildUnits();
+renderTable();
+</script>
+</body>
+</html>
