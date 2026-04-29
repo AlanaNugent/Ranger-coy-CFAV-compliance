@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CFAV Admin — Upload Data</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f2f5; --surface: #ffffff; --border: #dde1e9; --border2: #c8cdd8;
+    --accent: #1a56db; --text: #111827; --text2: #374151; --muted: #6b7280;
+    --red: #c81e1e; --red-bg: #fef2f2; --green: #065f46; --green-bg: #ecfdf5; --green-border: #6ee7b7;
+    --header-bg: #1e3a5f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans',sans-serif; min-height: 100vh; }
+
+  .header { background: var(--header-bg); border-bottom: 3px solid #2563eb; padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .badge { background: #2563eb; color: #fff; font-family: 'DM Mono',monospace; font-size: 11px; font-weight: 500; letter-spacing: 1.5px; padding: 5px 10px; border-radius: 4px; }
+  .header h1 { font-size: 18px; font-weight: 700; color: #fff; }
+  .header-sub { font-size: 11px; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.8px; }
+  .back-link { color: #93c5fd; font-size: 13px; text-decoration: none; border: 1px solid #2563eb; padding: 6px 12px; border-radius: 4px; font-weight: 600; }
+  .back-link:hover { background: #2563eb; color: #fff; }
+
+  /* LOGIN */
+  .login-wrap { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 70px); }
+  .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 40px; width: 380px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
+  .login-card h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .login-card p { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+  .input-group { text-align: left; margin-bottom: 18px; }
+  .input-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .input-group input { width: 100%; padding: 10px 14px; border: 1px solid var(--border2); border-radius: 8px; font-family: 'DM Sans',sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
+  .input-group input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+  .btn { width: 100%; padding: 11px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-family: 'DM Sans',sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+  .btn:hover { background: #1e429f; }
+  .btn:disabled { background: var(--muted); cursor: not-allowed; }
+  .error-msg { color: var(--red); font-size: 13px; margin-top: 12px; display: none; }
+
+  /* ADMIN PANEL */
+  .admin-wrap { max-width: 760px; margin: 40px auto; padding: 0 20px; }
+  .welcome-bar { background: var(--green-bg); border: 1px solid var(--green-border); border-radius: 8px; padding: 14px 18px; display: flex; align-items: center; gap: 10px; margin-bottom: 28px; color: var(--green); font-weight: 600; font-size: 14px; }
+
+  .upload-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .upload-card h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .upload-card p { color: var(--muted); font-size: 13px; margin-bottom: 24px; line-height: 1.6; }
+
+  .file-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+  .file-item label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .file-input-wrap { position: relative; }
+  .file-input-wrap input[type="file"] { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+  .file-btn { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border: 1px dashed var(--border2); border-radius: 8px; font-size: 13px; color: var(--muted); background: var(--bg); cursor: pointer; transition: border-color 0.2s; }
+  .file-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .file-btn.selected { border-color: #059669; border-style: solid; color: var(--green); background: var(--green-bg); }
+  .file-name { font-size: 11px; color: var(--muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .upload-btn { width: 100%; padding: 13px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-family: 'DM Sans',sans-serif; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+  .upload-btn:hover:not(:disabled) { background: #1e429f; }
+  .upload-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+  .progress-wrap { margin-top: 20px; display: none; }
+  .progress-label { font-size: 13px; color: var(--text2); margin-bottom: 8px; font-weight: 500; }
+  .progress-bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
+
+  .status-msg { margin-top: 16px; padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; display: none; }
+  .status-msg.success { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .status-msg.error { background: var(--red-bg); color: var(--red); border: 1px solid #fca5a5; }
+
+  .history-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .history-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .history-empty { color: var(--muted); font-size: 13px; }
+  .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .history-item:last-child { border-bottom: none; }
+  .history-date { font-weight: 600; color: var(--text); }
+  .history-info { color: var(--muted); }
+
+  .logout-btn { background: none; border: 1px solid #fca5a5; color: var(--red); padding: 6px 14px; border-radius: 6px; font-family: 'DM Sans',sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 20px; }
+  .logout-btn:hover { background: var(--red-bg); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="badge">ACF</div>
+    <div>
+      <h1>CFAV Admin Panel</h1>
+      <div class="header-sub">Data Upload &amp; Management</div>
+    </div>
+  </div>
+  <a href="index.html" class="back-link">← Back to Dashboard</a>
+</div>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-section">
+  <div class="login-card">
+    <div style="font-size:40px;margin-bottom:12px">🔐</div>
+    <h2>Admin Login</h2>
+    <p>Enter your password to access the data upload panel</p>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="password" id="password-input" placeholder="Enter admin password" onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <button class="btn" onclick="doLogin()">Login</button>
+    <div class="error-msg" id="error-msg">❌ Incorrect password. Please try again.</div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="admin-section" style="display:none">
+  <div class="admin-wrap">
+
+    <div class="welcome-bar">
+      ✅ Logged in as Administrator &nbsp;·&nbsp; Any uploads will update the live dashboard immediately
+      <button class="logout-btn" onclick="doLogout()" style="margin-top:0;margin-left:auto">Logout</button>
+    </div>
+
+    <div class="upload-card">
+      <h2>📂 Upload Compliance CSVs</h2>
+      <p>Upload your 6 CSV files downloaded from Westminster and the online reporting tool. All files are optional — only upload the ones that have changed. The live dashboard will update instantly for all viewers.</p>
+
+      <div class="file-grid">
+        <div class="file-item">
+          <label>Access NI</label>
+          <div class="file-input-wrap">
+            <input type="file" accept=".csv" id="file-accessNI" onchange="fileSelected(this,'btn-accessNI','name-accessNI')">
+            <div class="file-btn" id="btn-accessNI">📄 Choose CSV file</div>
+          </div>
+          <div class="file-name" id="name-accessNI"></div>
+        </div>
+        <div class="file-item">
+          <label>Safeguarding</label>
+          <div class="file-input-wrap">
+            <input type="file" accept=".csv" id="file-safeguarding" onchange="fileSelected(this,'btn-safeguarding','name-safeguarding')">
+            <div class="file-btn" id="btn-safeguarding">📄 Choose CSV file</div>
+          </div>
+          <div class="file-name" id="name-safeguarding"></div>
+        </div>
+        <div class="file-item">
+          <label>Fire Safety</label>
+          <div class="file-input-wrap">
+            <input type="file" accept=".csv" id="file-fire" onchange="fileSelected(this,'btn-fire','name-fire')">
+            <div class="file-btn" id="btn-fire">📄 Choose CSV file</div>
+          </div>
+          <div class="file-name" id="name-fire"></div>
+        </div>
+        <div class="file-item">
+          <label>Heat &amp; Cold</label>
+          <div class="file-input-wrap">
+            <input type="file" accept=".csv" id="file-heat" onchange="fileSelected(this,'btn-heat','name-heat')">
+            <div class="file-btn" id="btn-heat">📄 Choose CSV file</div>
+          </div>
+          <div class="file-name" id="name-heat"></div>
+        </div>
+        <div class="file-item">
+          <label>Medication Management</label>
+          <div class="file-input-wrap">
+            <input type="file" accept=".csv" id="file-medication" onchange="fileSelected(this,'btn-medication','name-medication')">
+            <div class="file-btn" id="btn-medication">📄 Choose CSV file</div>
+          </div>
+          <div class="file-name" id="name-medication"></div>
+        </div>
+        <div class="file-item">
+          <label>RFI / Data Protection</label>
+          <div class="file-input-wrap">
+            <input type="file" accept=".csv" id="file-rfi" onchange="fileSelected(this,'btn-rfi','name-rfi')">
+            <div class="file-btn" id="btn-rfi">📄 Choose CSV file</div>
+          </div>
+          <div class="file-name" id="name-rfi"></div>
+        </div>
+      </div>
+
+      <button class="upload-btn" id="upload-btn" onclick="doUpload()">⬆ Upload &amp; Update Dashboard</button>
+
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-label" id="progress-label">Processing files...</div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      </div>
+
+      <div class="status-msg" id="status-msg"></div>
+    </div>
+
+    <div class="history-card">
+      <h3>📅 Upload History</h3>
+      <div id="history-content"><div class="history-empty">No uploads yet.</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Firebase + Papa Parse -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBTM66-GftxacpgHr8m_ywQf7LOi0GP81s",
+    authDomain: "cfav-compliance.firebaseapp.com",
+    projectId: "cfav-compliance",
+    storageBucket: "cfav-compliance.firebasestorage.app",
+    messagingSenderId: "792099420875",
+    appId: "1:792099420875:web:fc26a8eb723f462d6b394e"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ── Password (change this to whatever you want) ──────────────
+  const ADMIN_PASSWORD = "cfav2026";
+
+  // ── Login ────────────────────────────────────────────────────
+  window.doLogin = function() {
+    const pw = document.getElementById('password-input').value;
+    if (pw === ADMIN_PASSWORD) {
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('admin-section').style.display = 'block';
+      loadHistory();
+    } else {
+      document.getElementById('error-msg').style.display = 'block';
+    }
+  };
+
+  window.doLogout = function() {
+    document.getElementById('admin-section').style.display = 'none';
+    document.getElementById('login-section').style.display = 'flex';
+    document.getElementById('password-input').value = '';
+  };
+
+  // ── File selection UI ────────────────────────────────────────
+  window.fileSelected = function(input, btnId, nameId) {
+    const btn = document.getElementById(btnId);
+    const nameEl = document.getElementById(nameId);
+    if (input.files[0]) {
+      btn.textContent = '✅ ' + input.files[0].name.substring(0,25);
+      btn.classList.add('selected');
+      nameEl.textContent = input.files[0].name;
+    }
+  };
+
+  // ── Parse CSV ────────────────────────────────────────────────
+  function parseCSV(file) {
+    return new Promise((resolve, reject) => {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: r => resolve(r.data),
+        error: e => reject(e)
+      });
+    });
+  }
+
+  // ── Upload ───────────────────────────────────────────────────
+  window.doUpload = async function() {
+    const fileKeys = ['accessNI','safeguarding','fire','heat','medication','rfi'];
+    const fileIds  = ['file-accessNI','file-safeguarding','file-fire','file-heat','file-medication','file-rfi'];
+
+    const selectedFiles = fileKeys.filter((_,i) => document.getElementById(fileIds[i]).files[0]);
+    if (selectedFiles.length === 0) {
+      showStatus('Please select at least one CSV file to upload.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('upload-btn');
+    btn.disabled = true;
+    showProgress(true, 'Reading files...', 10);
+
+    try {
+      // Get existing data first
+      const docRef = doc(db, "compliance", "latest");
+      const existing = await getDoc(docRef);
+      const currentData = existing.exists() ? existing.data() : {};
+
+      showProgress(true, 'Parsing CSV files...', 30);
+
+      const newData = { ...currentData, uploadedAt: new Date().toISOString() };
+
+      for (let i = 0; i < fileKeys.length; i++) {
+        const input = document.getElementById(fileIds[i]);
+        if (input.files[0]) {
+          const parsed = await parseCSV(input.files[0]);
+          newData[fileKeys[i]] = parsed;
+        }
+      }
+
+      showProgress(true, 'Uploading to database...', 70);
+
+      await setDoc(docRef, newData);
+
+      // Save to history
+      const histRef = doc(db, "compliance", "history");
+      const histSnap = await getDoc(histRef);
+      const entry = {
+        date: new Date().toISOString(),
+        filesUploaded: selectedFiles.join(', ')
+      };
+      if (histSnap.exists()) {
+        await updateDoc(histRef, { entries: arrayUnion(entry) });
+      } else {
+        await setDoc(histRef, { entries: [entry] });
+      }
+
+      showProgress(true, 'Done!', 100);
+      showStatus('✅ Dashboard updated successfully! All viewers will see the new data when they refresh.', 'success');
+      loadHistory();
+
+      // Reset file inputs
+      fileKeys.forEach((_,i) => {
+        document.getElementById(fileIds[i]).value = '';
+        document.getElementById('btn-'+fileKeys[i]).textContent = '📄 Choose CSV file';
+        document.getElementById('btn-'+fileKeys[i]).classList.remove('selected');
+        document.getElementById('name-'+fileKeys[i]).textContent = '';
+      });
+
+    } catch (err) {
+      console.error(err);
+      showStatus('❌ Upload failed: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      setTimeout(() => showProgress(false), 2000);
+    }
+  };
+
+  // ── History ──────────────────────────────────────────────────
+  async function loadHistory() {
+    try {
+      const histRef = doc(db, "compliance", "history");
+      const snap = await getDoc(histRef);
+      const container = document.getElementById('history-content');
+      if (!snap.exists() || !snap.data().entries?.length) {
+        container.innerHTML = '<div class="history-empty">No uploads yet.</div>';
+        return;
+      }
+      const entries = [...snap.data().entries].reverse().slice(0, 10);
+      container.innerHTML = entries.map(e => {
+        const d = new Date(e.date);
+        const dateStr = d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+        const timeStr = d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+        return `<div class="history-item"><span class="history-date">${dateStr} at ${timeStr}</span><span class="history-info">Files: ${e.filesUploaded}</span></div>`;
+      }).join('');
+    } catch (e) { console.error(e); }
+  }
+
+  function showProgress(visible, label='', pct=0) {
+    const wrap = document.getElementById('progress-wrap');
+    wrap.style.display = visible ? 'block' : 'none';
+    if (visible) {
+      document.getElementById('progress-label').textContent = label;
+      document.getElementById('progress-fill').style.width = pct + '%';
+    }
+  }
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('status-msg');
+    el.textContent = msg;
+    el.className = 'status-msg ' + type;
+    el.style.display = 'block';
+    if (type === 'success') setTimeout(() => el.style.display = 'none', 6000);
+  }
+</script>
+</body>
+</html>
