@@ -137,6 +137,11 @@
   .no-results { text-align: center; padding: 60px; color: var(--muted); font-size: 14px; font-weight: 500; }
   .count-tag { background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600; color: var(--muted); }
   .footer { text-align: center; padding: 18px; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); background: var(--surface); }
+  .dl-btn { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 7px 14px; font-family: 'DM Sans',sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .dl-btn:hover { background: var(--accent2); }
+  .dl-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dl-btn.small { margin-left: auto; padding: 5px 11px; font-size: 12px; background: var(--surface); color: var(--accent); border: 1px solid var(--accent); }
+  .dl-btn.small:hover { background: var(--accent-light); }
   .last-updated { font-size: 11px; color: #93c5fd; font-family: 'DM Mono',monospace; }
 </style>
 </head>
@@ -193,6 +198,7 @@
       <button class="view-btn active" onclick="setView('personnel')" id="btn-personnel">PERSONNEL</button>
       <button class="view-btn" onclick="setView('tasks')" id="btn-tasks">BY TASK</button>
     </div>
+    <button class="dl-btn" onclick="downloadAll()" title="Download every module as one Excel workbook">⬇ Download all (Excel)</button>
     <div class="legend">
       <div class="legend-item"><div class="dot red"></div> Expired</div>
       <div class="legend-item"><div class="dot amber"></div> &lt;90 days</div>
@@ -234,6 +240,8 @@
 
 <div class="footer">CFAV COMPLIANCE DASHBOARD — ACF ADMINISTRATIVE TOOL — NOT FOR OPERATIONAL USE</div>
 
+<!-- Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Firebase -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -475,7 +483,7 @@
         const counts={expired:0,urgent:0,warn:0,ok:0,none:0};
         sorted.forEach(p=>{ let s=task.key==='accessNI'?statusOfANI(p.accessNI?.days):statusOf(p[task.key]?.days,p[task.key]?.result); counts[s]=(counts[s]||0)+1; });
         const section=document.createElement('div'); section.className='task-section';
-        section.innerHTML=`<div class="task-section-header"><span style="font-size:20px">${task.icon}</span><span class="task-section-title">${task.label}</span><span class="count-tag">${sorted.length} personnel</span><span style="margin-left:4px;font-size:12px;color:#dc2626">${counts.expired||0} expired</span><span style="font-size:12px;color:#d97706;margin-left:8px">${(counts.urgent||0)+(counts.warn||0)} due soon</span><span style="font-size:12px;color:var(--muted);margin-left:8px">${counts.none||0} not taken</span></div><div class="task-grid" id="tg-${task.key}"></div>`;
+        section.innerHTML=`<div class="task-section-header"><span style="font-size:20px">${task.icon}</span><span class="task-section-title">${task.label}</span><span class="count-tag">${sorted.length} personnel</span><span style="margin-left:4px;font-size:12px;color:#dc2626">${counts.expired||0} expired</span><span style="font-size:12px;color:#d97706;margin-left:8px">${(counts.urgent||0)+(counts.warn||0)} due soon</span><span style="font-size:12px;color:var(--muted);margin-left:8px">${counts.none||0} not taken</span><button class="dl-btn small" onclick="downloadModule('${task.key}')">⬇ Download</button></div><div class="task-grid" id="tg-${task.key}"></div>`;
         container.appendChild(section);
         const grid=section.querySelector('.task-grid');
         sorted.forEach(p=>{
@@ -487,6 +495,121 @@
           grid.appendChild(card);
         });
       });
+    };
+
+    // ── Excel export ──────────────────────────────────────────
+    const MODULES=[
+      {key:'accessNI',label:'Access NI',sheet:'Access NI'},
+      {key:'safeguarding',label:'Safeguarding',sheet:'Safeguarding'},
+      {key:'fire',label:'Fire Safety',sheet:'Fire Safety'},
+      {key:'rfi',label:'RFI / Data Protection',sheet:'RFI - Data Protection'},
+      {key:'heat',label:'Heat & Cold Injury',sheet:'Heat & Cold'},
+      {key:'medication',label:'Medication Management',sheet:'Medication'},
+      {key:'faaw',label:'First Aid at Work & TQ',sheet:'FAAW & TQ'}
+    ];
+    const STATUS_TEXT={expired:'Expired',urgent:'Due within 30 days',warn:'Due within 90 days',ok:'Current',none:'Not taken'};
+    const OVERALL_TEXT={expired:'Critical',urgent:'Urgent',warn:'Due soon',none:'Incomplete',ok:'Current'};
+
+    function daysOf(p,key){
+      const d=key==='accessNI'?p.accessNI?.days:p[key]?.days;
+      return (d===null||d===undefined||d==='')?null:Number(d);
+    }
+    function modStatus(p,key){
+      if(key==='accessNI') return p.accessNI?statusOfANI(daysOf(p,key)):null;
+      return p[key]?statusOf(p[key].days,p[key].result):null;
+    }
+    function cellText(p,key){
+      const s=modStatus(p,key);
+      if(s===null) return 'No record';
+      if(s==='none') return 'Not taken';
+      const d=daysOf(p,key);
+      if(d===null) return STATUS_TEXT[s];
+      return STATUS_TEXT[s]+' ('+(d<0?Math.abs(d)+' days overdue':d+' days left')+')';
+    }
+    function exportPeople(){
+      const q=document.getElementById('search').value.toLowerCase().trim();
+      const unit=document.getElementById('filter-unit').value;
+      return PEOPLE.filter(p=>{ if(q&&!(p.name+p.pnum+p.unit+p.rank).toLowerCase().includes(q))return false; if(unit&&p.unit!==unit)return false; return true; });
+    }
+    function filterNote(){
+      const q=document.getElementById('search').value.trim();
+      const unit=document.getElementById('filter-unit').value;
+      const parts=[]; if(unit)parts.push('Unit: '+unit); if(q)parts.push('Search: "'+q+'"');
+      return parts.length?parts.join(', '):'All personnel';
+    }
+    function urgencyVal(p,key){
+      const s=modStatus(p,key);
+      if(s===null) return 99999; if(s==='none') return 99998;
+      const d=daysOf(p,key);
+      if(d===null) return s==='expired'?-99999:99997;
+      return d;
+    }
+    function moduleRows(key){
+      return exportPeople().slice().sort((a,b)=>urgencyVal(a,key)-urgencyVal(b,key)||a.surname.localeCompare(b.surname)).map(p=>{
+        const s=modStatus(p,key), d=daysOf(p,key);
+        const base={'Surname':p.surname,'First Name':p.firstName,'Rank':p.rank||'','PNumber':p.pnum||'','Unit':p.unit||''};
+        const status=s===null?'No record':STATUS_TEXT[s];
+        if(key==='accessNI'){ const a=p.accessNI||{};
+          return {...base,'Certificate Issued':a.issued||'','Renewal Date':a.renewal||'','Days Remaining':d===null?'':d,'Status':status}; }
+        const r=p[key]||{};
+        return {...base,'Result':r.result||'No record','Date Achieved':r.date||'','Days Remaining':d===null?'':d,'Status':status};
+      });
+    }
+    function overviewRows(){
+      const order={expired:0,urgent:1,warn:2,none:3,ok:4};
+      return exportPeople().slice().sort((a,b)=>(order[worstStatus(a)]-order[worstStatus(b)])||a.surname.localeCompare(b.surname)).map(p=>{
+        const row={'Surname':p.surname,'First Name':p.firstName,'Rank':p.rank||'','PNumber':p.pnum||'','Unit':p.unit||''};
+        MODULES.forEach(m=>{ row[m.label]=cellText(p,m.key); });
+        row['Overall']=OVERALL_TEXT[worstStatus(p)]||'';
+        return row;
+      });
+    }
+    function autoSheet(rows){
+      const ws=XLSX.utils.json_to_sheet(rows);
+      if(rows.length){ const keys=Object.keys(rows[0]);
+        ws['!cols']=keys.map(k=>({wch:Math.min(45,Math.max(k.length,...rows.map(r=>String(r[k]??'').length))+2)})); }
+      return ws;
+    }
+    function fmtDate(d){ return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+    function summarySheet(mods){
+      const people=exportPeople();
+      const aoa=[
+        ['CFAV Compliance Report'],
+        ['Report generated',fmtDate(new Date())],
+        ['Data last uploaded',RAW.uploadedAt?fmtDate(new Date(RAW.uploadedAt)):'Unknown'],
+        ['Personnel included',filterNote()+' ('+people.length+')'],
+        [],
+        ['Module','Expired','Due within 30 days','Due within 90 days','Current','Not taken','No record']
+      ];
+      mods.forEach(m=>{
+        const c={expired:0,urgent:0,warn:0,ok:0,none:0,missing:0};
+        people.forEach(p=>{ const s=modStatus(p,m.key); if(s===null)c.missing++; else c[s]++; });
+        aoa.push([m.label,c.expired,c.urgent,c.warn,c.ok,c.none,c.missing]);
+      });
+      const ws=XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols']=[{wch:26},{wch:12},{wch:20},{wch:20},{wch:10},{wch:11},{wch:11}];
+      return ws;
+    }
+    function stamp(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    function xlsxReady(){
+      if(typeof XLSX==='undefined'){ alert('The download tool did not load. Check your internet connection and refresh the page.'); return false; }
+      return true;
+    }
+    window.downloadAll=function(){
+      if(!xlsxReady()) return;
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,summarySheet(MODULES),'Summary');
+      XLSX.utils.book_append_sheet(wb,autoSheet(overviewRows()),'Overview');
+      MODULES.forEach(m=>XLSX.utils.book_append_sheet(wb,autoSheet(moduleRows(m.key)),m.sheet));
+      XLSX.writeFile(wb,'CFAV_Compliance_'+stamp()+'.xlsx');
+    };
+    window.downloadModule=function(key){
+      if(!xlsxReady()) return;
+      const m=MODULES.find(x=>x.key===key); if(!m) return;
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,summarySheet([m]),'Summary');
+      XLSX.utils.book_append_sheet(wb,autoSheet(moduleRows(key)),m.sheet);
+      XLSX.writeFile(wb,'CFAV_'+m.sheet.replace(/[^A-Za-z0-9]+/g,'_')+'_'+stamp()+'.xlsx');
     };
 
     document.getElementById('search').addEventListener('input',()=>{ renderTable(); if(window.currentView==='tasks') renderTaskView(); });
