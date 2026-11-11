@@ -57,7 +57,7 @@
   .no-data-screen p { color: var(--muted); font-size: 14px; max-width: 400px; line-height: 1.6; }
   .no-data-screen a { color: var(--accent); font-weight: 600; }
 
-  .stats-bar { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+  .stats-bar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
   .stat-card { background: var(--surface); padding: 14px 18px; cursor: pointer; transition: background 0.15s; position: relative; }
   .stat-card:hover { background: #f0f4ff; }
   .stat-card.active { background: #f0f4ff; }
@@ -82,7 +82,7 @@
   .main { padding: 16px 28px 20px; overflow-x: auto; }
   .table-scroll { max-height: calc(100vh - 240px); overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
 
-  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1000px; background: var(--surface); }
   thead { position: sticky; top: 0; z-index: 10; }
   thead th { background: #1e3a5f; border-bottom: 2px solid #2563eb; padding: 11px 14px; text-align: left; font-family: 'DM Sans',sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.6px; color: #bfdbfe; text-transform: uppercase; white-space: nowrap; cursor: pointer; user-select: none; }
   thead th:hover { color: #ffffff; }
@@ -216,6 +216,7 @@
               <th onclick="sortBy('rfi')">RFI / Data Prot.</th>
               <th onclick="sortBy('heat')">Heat &amp; Cold</th>
               <th onclick="sortBy('medication')">Medication</th>
+              <th onclick="sortBy('faaw')">FAAW &amp; TQ</th>
               <th onclick="sortBy('worst')">Overall</th>
             </tr>
           </thead>
@@ -300,15 +301,15 @@
         surname: r['Surname'], firstName: r['First Name'],
         pnum: r['PNumber']||'', rank: '', unit: r['Unit']||'', category: r['Adult Category']||'',
         accessNI: { days: r['Days Remaining'], renewal: r['Renewal Date'], issued: r['Certificate Issue Date'], appDate: r['Application Date']||'', csDate: r['Counter Signatory Date']||'' },
-        safeguarding: null, fire: null, rfi: null, heat: null, medication: null
+        safeguarding: null, fire: null, rfi: null, heat: null, medication: null, faaw: null
       };
     });
 
-    ['fire','heat','medication','rfi','safeguarding'].forEach(key => {
+    ['fire','heat','medication','rfi','safeguarding','faaw'].forEach(key => {
       (RAW[key]||[]).forEach(r => {
         const k = personKey(r);
         if (!personMap[k]) {
-          personMap[k] = { name: r['First Name']+' '+r['Surname'], surname: r['Surname'], firstName: r['First Name'], pnum: r['PNumber']||'', rank: r['Rank']||'', unit:'', category:'', accessNI:null, safeguarding:null, fire:null, rfi:null, heat:null, medication:null };
+          personMap[k] = { name: r['First Name']+' '+r['Surname'], surname: r['Surname'], firstName: r['First Name'], pnum: r['PNumber']||'', rank: r['Rank']||'', unit:'', category:'', accessNI:null, safeguarding:null, fire:null, rfi:null, heat:null, medication:null, faaw:null };
         }
         if (r['Rank']) personMap[k].rank = r['Rank'];
         const days = r['Validity (Days remaining)'];
@@ -332,7 +333,7 @@
       const order=['expired','urgent','warn','none','ok'];
       const all=[];
       if(p.accessNI) all.push(statusOfANI(p.accessNI.days));
-      ['safeguarding','fire','rfi','heat','medication'].forEach(k=>{ if(p[k]) all.push(statusOf(p[k].days,p[k].result)); });
+      ['safeguarding','fire','rfi','heat','medication','faaw'].forEach(k=>{ if(p[k]) all.push(statusOf(p[k].days,p[k].result)); });
       for(const s of order) if(all.includes(s)) return s;
       return 'ok';
     }
@@ -351,8 +352,8 @@
     window.pillClass=pillClass; window.pillLabel=pillLabel; window.daysColor=daysColor; window.borderClass=borderClass;
 
     // Stats bar
-    const tasks=['accessNI','safeguarding','fire','rfi','heat','medication'];
-    const labels=['Access NI','Safeguarding','Fire Safety','RFI / Data','Heat & Cold','Medication'];
+    const tasks=['accessNI','safeguarding','fire','rfi','heat','medication','faaw'];
+    const labels=['Access NI','Safeguarding','Fire Safety','RFI / Data','Heat & Cold','Medication','FAAW & TQ'];
     const bar=document.getElementById('stats-bar'); bar.innerHTML='';
     tasks.forEach((t,i)=>{
       let exp=0,urg=0,warn=0,ok=0,none=0;
@@ -377,7 +378,7 @@
     function sortVal(p,col){
       if(col==='name') return p.surname; if(col==='rank') return p.rank; if(col==='unit') return p.unit;
       if(col==='worst'){ const o={expired:0,urgent:1,warn:2,none:3,ok:4}; return o[worstStatus(p)]||4; }
-      const map={accessni:'accessNI',safeguarding:'safeguarding',fire:'fire',rfi:'rfi',heat:'heat',medication:'medication'};
+      const map={accessni:'accessNI',safeguarding:'safeguarding',fire:'fire',rfi:'rfi',heat:'heat',medication:'medication',faaw:'faaw'};
       const k=map[col]||col;
       if(k==='accessNI') return p.accessNI?(p.accessNI.days??9999):9999;
       return p[k]?(p[k].result==='Not Taken'?9998:(p[k].days??-9999)):9999;
@@ -396,7 +397,7 @@
     function encodeKey(k){ return k.replace(/[^a-zA-Z0-9]/g,'_'); }
 
     function buildExpand(p){
-      const tdef=[{label:'Access NI',key:'accessNI',isANI:true},{label:'Safeguarding',key:'safeguarding'},{label:'Fire Safety',key:'fire'},{label:'RFI / Data Protection',key:'rfi'},{label:'Heat & Cold Injury',key:'heat'},{label:'Medication Mgmt',key:'medication'}];
+      const tdef=[{label:'Access NI',key:'accessNI',isANI:true},{label:'Safeguarding',key:'safeguarding'},{label:'Fire Safety',key:'fire'},{label:'RFI / Data Protection',key:'rfi'},{label:'Heat & Cold Injury',key:'heat'},{label:'Medication Mgmt',key:'medication'},{label:'First Aid at Work & TQ',key:'faaw'}];
       let cards='';
       tdef.forEach(t=>{
         let days,result,date,extra='';
@@ -434,7 +435,7 @@
           <td><span class="td-rank">${p.rank||'—'}</span></td>
           <td><span class="td-unit">${p.unit||'—'}</span></td>
           ${cell(p.accessNI?{days:p.accessNI.days,result:'Pass'}:null,true)}
-          ${cell(p.safeguarding,false)}${cell(p.fire,false)}${cell(p.rfi,false)}${cell(p.heat,false)}${cell(p.medication,false)}
+          ${cell(p.safeguarding,false)}${cell(p.fire,false)}${cell(p.rfi,false)}${cell(p.heat,false)}${cell(p.medication,false)}${cell(p.faaw,false)}
           <td><span class="comp-pill ${pillClass(ws)}" style="min-width:90px">${wlabels[ws]||ws}</span></td>`;
         row.onclick=()=>{
           const expId='exp-'+encodeKey(p.name);
@@ -447,7 +448,7 @@
         body.appendChild(row);
         const expRow=document.createElement('tr');
         expRow.className='expand-row'; expRow.id='exp-'+encodeKey(p.name); expRow.style.display='none';
-        expRow.innerHTML=`<td colspan="10">${buildExpand(p)}</td>`;
+        expRow.innerHTML=`<td colspan="11">${buildExpand(p)}</td>`;
         body.appendChild(expRow);
       });
     };
@@ -462,7 +463,7 @@
       if(v==='tasks') renderTaskView();
     };
 
-    const TASK_DEFS=[{key:'safeguarding',label:'Safeguarding Annual Refresher',icon:'🛡'},{key:'fire',label:'MoD Fire Safety Awareness',icon:'🔥'},{key:'rfi',label:'RFI / Data Protection (DLE)',icon:'🔒'},{key:'heat',label:'Heat Illness & Cold Injury',icon:'🌡'},{key:'medication',label:'Medication Management',icon:'💊'},{key:'accessNI',label:'Access NI Disclosure',icon:'📋'}];
+    const TASK_DEFS=[{key:'safeguarding',label:'Safeguarding Annual Refresher',icon:'🛡'},{key:'fire',label:'MoD Fire Safety Awareness',icon:'🔥'},{key:'rfi',label:'RFI / Data Protection (DLE)',icon:'🔒'},{key:'heat',label:'Heat Illness & Cold Injury',icon:'🌡'},{key:'medication',label:'Medication Management',icon:'💊'},{key:'faaw',label:'First Aid at Work & TQ',icon:'⛑'},{key:'accessNI',label:'Access NI Disclosure',icon:'📋'}];
 
     window.renderTaskView=function(){
       const container=document.getElementById('task-view-content'); container.innerHTML='';
